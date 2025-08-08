@@ -29,19 +29,33 @@ def fetch_poster(movie_id):
 
 
 def recommend(movie):
+    # Normalize input and movie titles
+    movie = movie.strip().lower()
+    movies['title'] = movies['title'].str.strip().str.lower()
+
+    # Check if movie exists
+    if movies[movies['title'] == movie].empty:
+        st.error("Movie not found in database.")
+        st.stop()
+
     movie_index = movies[movies['title'] == movie].index[0]
+
+    # Check if index is valid for similarity matrix
+    if movie_index >= len(similarity):
+        st.error("Similarity matrix index out of bounds.")
+        st.stop()
+
+    # Get similarity scores
     distances = similarity[movie_index]
     movies_list = sorted(list(enumerate(distances)), reverse=True, key=lambda x: x[1])[1:6]
 
-    recommend_movies=[]
-    recommended_movies_posters = []
+    recommend_movies = []
+    recommend_posters = []
     for i in movies_list:
-        movie_id = movies.iloc[i[0]].movie_id
-
         recommend_movies.append(movies.iloc[i[0]].title)
-        # fetch poster from API
-        recommended_movies_posters.append(fetch_poster(movie_id))
-    return recommend_movies,recommended_movies_posters
+        recommend_posters.append(fetch_poster(movies.iloc[i[0]].movie_id))
+
+    return recommend_movies, recommend_posters
 
 movies_dict=pickle.load(open('movie_dict.pkl','rb'))
 movies=pd.DataFrame(movies_dict)
@@ -86,5 +100,6 @@ if st.button('Recommend'):
     with col5:
         st.text(names[4])
         st.image(posters[4])
+
 
 
